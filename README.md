@@ -60,8 +60,8 @@ python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format mp3
 # Download as AAC audio
 python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format aac
 
-# Specify output directory
-python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format mp4 --output ./downloads
+# Specify custom output directory
+python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format mp4 --output ./my-videos
 ```
 
 ### Options
@@ -70,13 +70,30 @@ python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format mp4 --
 |--------|-------|-------------|
 | `--url` | `-u` | YouTube video URL |
 | `--format` | `-f` | Output format: mp4, source, mp3, aac |
-| `--output` | `-o` | Output directory (default: current) |
+| `--output` | `-o` | Output directory (default: downloads) |
+
+### Download Folder Structure
+
+Files are automatically organized by format type:
+
+```
+downloads/
+├── mp4/           # MP4 video files
+├── source/        # Original format files
+├── mp3/           # MP3 audio files
+└── aac/           # AAC audio files
+```
 
 ## Project Structure
 
 ```
 youtube-downloader/
-├── .venv/                 # Virtual environment
+├── .venv/                 # Virtual environment (git ignored)
+├── downloads/             # Downloaded files (git ignored)
+│   ├── mp4/
+│   ├── source/
+│   ├── mp3/
+│   └── aac/
 ├── docs/
 │   └── PRD.md             # Product requirements
 ├── src/
