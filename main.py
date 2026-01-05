@@ -5,7 +5,7 @@ import argparse
 import sys
 from typing import Optional
 
-from src.downloader import FormatType, YouTubeDownloader
+from src.downloader import FormatType, YouTubeDownloader, SUPPORTED_BROWSERS
 
 
 def print_banner() -> None:
@@ -97,6 +97,10 @@ Examples:
   python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID"
   python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format mp4
   python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format mp3 --output ./downloads
+
+Authentication (to avoid rate limits):
+  python3 main.py --browser chrome
+  python3 main.py --cookies cookies.txt --url "https://www.youtube.com/watch?v=VIDEO_ID"
         """
     )
 
@@ -120,10 +124,43 @@ Examples:
         help='Output directory (default: downloads)'
     )
 
+    parser.add_argument(
+        '--browser', '-b',
+        type=str,
+        choices=SUPPORTED_BROWSERS,
+        help=f'Browser to extract cookies from for authentication ({', '.join(SUPPORTED_BROWSERS)})'
+    )
+
+    parser.add_argument(
+        '--cookies', '-c',
+        type=str,
+        help='Path to cookies.txt file for authentication'
+    )
+
     return parser.parse_args()
 
 
-def run_interactive(output_path: str) -> int:
+def select_browser() -> Optional[str]:
+    """Prompt user to select browser for authentication."""
+    print("\nAuthentication (optional - helps avoid rate limits):")
+    print("  [0] Skip (no authentication)")
+    for i, browser in enumerate(SUPPORTED_BROWSERS, 1):
+        print(f"  [{i}] {browser.capitalize()}")
+
+    while True:
+        choice = input("\nSelect browser for cookies (0 to skip): ").strip()
+        if choice == '0' or choice == '':
+            return None
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(SUPPORTED_BROWSERS):
+                return SUPPORTED_BROWSERS[idx]
+        except ValueError:
+            pass
+        print(f"Invalid choice. Please enter 0-{len(SUPPORTED_BROWSERS)}.")
+
+
+def run_interactive(output_path: str, browser: Optional[str] = None, cookies_file: Optional[str] = None) -> int:
     """
     Run in interactive mode.
 
@@ -132,8 +169,13 @@ def run_interactive(output_path: str) -> int:
     """
     print_banner()
 
+    if not browser and not cookies_file:
+        browser = select_browser()
+        if browser:
+            print(f"\n✓ Using cookies from {browser.capitalize()}")
+
     url = get_url_input()
-    downloader = YouTubeDownloader(url, output_path)
+    downloader = YouTubeDownloader(url, output_path, browser=browser, cookies_file=cookies_file)
 
     if not downloader.validate_url():
         print("\n✗ Invalid YouTube URL. Please check and try again.")
@@ -168,7 +210,12 @@ def run_with_args(args: argparse.Namespace) -> int:
     """
     print_banner()
 
-    downloader = YouTubeDownloader(args.url, args.output)
+    downloader = YouTubeDownloader(args.url, args.output, browser=args.browser, cookies_file=args.cookies)
+
+    if args.browser:
+        print(f"✓ Using cookies from {args.browser.capitalize()}")
+    elif args.cookies:
+        print(f"✓ Using cookies from file: {args.cookies}")
 
     if not downloader.validate_url():
         print("✗ Invalid YouTube URL. Please check and try again.")
@@ -204,7 +251,7 @@ def main() -> int:
         if args.url:
             return run_with_args(args)
         else:
-            return run_interactive(args.output)
+            return run_interactive(args.output, args.browser, args.cookies)
 
     except KeyboardInterrupt:
         print("\n\nDownload cancelled by user.")

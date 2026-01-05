@@ -20,20 +20,36 @@ class FormatType(Enum):
     AAC = "aac"
 
 
+SUPPORTED_BROWSERS = ['chrome', 'firefox', 'safari', 'edge', 'opera', 'brave', 'chromium']
+
+
 class YouTubeDownloader:
     """Downloads YouTube videos and audio in various formats."""
 
-    def __init__(self, url: str, output_path: str = "."):
+    def __init__(self, url: str, output_path: str = ".", browser: Optional[str] = None, cookies_file: Optional[str] = None):
         """
         Initialize the downloader.
 
         Args:
             url: YouTube video URL.
             output_path: Directory to save downloaded files.
+            browser: Browser name to extract cookies from (chrome, firefox, safari, edge, etc.).
+            cookies_file: Path to cookies.txt file for authentication.
         """
         self.url = url
         self.output_path = output_path
+        self.browser = browser
+        self.cookies_file = cookies_file
         self._video_info: Optional[dict] = None
+
+    def _get_auth_options(self) -> dict:
+        """Get authentication options for yt-dlp."""
+        auth_opts = {}
+        if self.browser:
+            auth_opts['cookiesfrombrowser'] = (self.browser,)
+        elif self.cookies_file and os.path.exists(self.cookies_file):
+            auth_opts['cookiefile'] = self.cookies_file
+        return auth_opts
 
     def validate_url(self) -> bool:
         """
@@ -58,6 +74,11 @@ class YouTubeDownloader:
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
+            'extractor_retries': 5,
+            'sleep_interval': 5,
+            'max_sleep_interval': 30,
+            'sleep_interval_requests': 1,
+            **self._get_auth_options(),
         }
 
         try:
@@ -66,7 +87,11 @@ class YouTubeDownloader:
                 self._video_info = ydl.sanitize_info(info)
                 return self._video_info
         except yt_dlp.utils.DownloadError as e:
-            print(f"\nError fetching video info: {e}")
+            error_msg = str(e)
+            if 'rate-limited' in error_msg.lower() or "isn't available" in error_msg.lower():
+                print(f"\n⚠ YouTube rate limit detected. Please wait a few minutes and try again.")
+            else:
+                print(f"\nError fetching video info: {e}")
             return None
 
     def get_video_title(self) -> str:
@@ -127,6 +152,13 @@ class YouTubeDownloader:
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
+            'extractor_retries': 5,
+            'retries': 10,
+            'fragment_retries': 10,
+            'sleep_interval': 5,
+            'max_sleep_interval': 30,
+            'sleep_interval_requests': 1,
+            **self._get_auth_options(),
         }
 
         if format_type == FormatType.MP4:

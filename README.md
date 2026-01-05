@@ -71,6 +71,26 @@ python3 main.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format mp4 --
 | `--url` | `-u` | YouTube video URL |
 | `--format` | `-f` | Output format: mp4, source, mp3, aac |
 | `--output` | `-o` | Output directory (default: downloads) |
+| `--browser` | `-b` | Browser to extract cookies from (chrome, firefox, safari, edge, opera, brave, chromium) |
+| `--cookies` | `-c` | Path to cookies.txt file for authentication |
+
+### Authentication (Avoid Rate Limits)
+
+Use your YouTube account to avoid rate limiting:
+
+```bash
+# Use cookies from your browser (recommended)
+python3 main.py --browser chrome
+python3 main.py --browser firefox
+python3 main.py --browser safari
+
+# Or use a cookies.txt file
+python3 main.py --cookies cookies.txt --url "https://www.youtube.com/watch?v=VIDEO_ID"
+```
+
+**Supported browsers:** chrome, firefox, safari, edge, opera, brave, chromium
+
+> **Note:** Make sure you're logged into YouTube in your browser before using the `--browser` option.
 
 ### Download Folder Structure
 
